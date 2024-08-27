@@ -3,6 +3,7 @@ import {
   ChartsProvider,
   generateChartsTheme,
   getTheme,
+  typography,
   PersesChartsTheme,
 } from '@perses-dev/components';
 import { ThemeProvider } from '@mui/material';
@@ -32,6 +33,7 @@ import { ErrorAlert } from './ErrorAlert';
 import { NoTempoInstanceSelectedState } from './NoTempoInstanceSelectedState';
 import { LoadingState } from './LoadingState';
 import { usePatternFlyTheme } from './console/utils/usePatternFlyTheme';
+import { ChartThemeColor, getThemeColors } from '@patternfly/react-charts';
 
 class DatasourceApiImpl implements DatasourceApi {
   constructor(public proxyDatasource: GlobalDatasourceResource) {}
@@ -59,6 +61,15 @@ const patternflyBlue400 = '#0066cc';
 const patternflyBlue500 = '#004080';
 const patternflyBlue600 = '#002952';
 const defaultPaletteColors = [patternflyBlue400, patternflyBlue500, patternflyBlue600];
+
+const patternflyChartsMultiUnorderedPalette = getThemeColors(
+  ChartThemeColor.multiUnordered,
+).chart.colorScale.flatMap((cssColor) => {
+  // colors are stored as 'var(--pf-chart-theme--multi-color-unordered--ColorScale--3400, #73c5c5)'
+  // need to extract the hex value, because fillStyle() of <canvas> does not support CSS vars
+  const match = cssColor.match(/#[a-fA-F0-9]+/);
+  return match ? [match[0]] : [];
+});
 
 // PluginRegistry configuration to allow access to
 // visualization panels/charts (@perses-dev/panels-plugin)
@@ -90,10 +101,20 @@ interface PersesWrapperProps {
 export function PersesWrapper({ children }: PersesWrapperProps) {
   const { theme } = usePatternFlyTheme();
 
-  const muiTheme = getTheme(theme);
-  muiTheme.shape.borderRadius = 0;
+  const muiTheme = getTheme(theme, {
+    typography: {
+      ...typography,
+      fontFamily: 'var(--pf-v5-global--FontFamily--text)',
+    },
+    shape: {
+      borderRadius: 0,
+    },
+  });
 
   const chartsTheme: PersesChartsTheme = generateChartsTheme(muiTheme, {
+    echartsTheme: {
+      color: patternflyChartsMultiUnorderedPalette,
+    },
     thresholds: {
       defaultColor: patternflyBlue300,
       palette: defaultPaletteColors,
