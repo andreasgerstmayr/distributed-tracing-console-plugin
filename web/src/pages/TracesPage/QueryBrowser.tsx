@@ -14,7 +14,7 @@ import { QueryEditor } from './QueryEditor/QueryEditor';
 import { TempoInstanceDropdown } from '../../components/TempoInstanceDropdown';
 import { ScatterPlot } from './ScatterPlot';
 import { TraceTable } from './TraceTable';
-import { PersesWrapper } from '../../components/PersesWrapper';
+import { PersesDashboardWrapper, PersesWrapper } from '../../components/PersesWrapper';
 import { DurationString } from '@perses-dev/core';
 import { createEnumParam, StringParam, useQueryParam, withDefault } from 'use-query-params';
 import { useTempoInstance } from '../../hooks/useTempoInstance';
@@ -55,16 +55,18 @@ export const QueryBrowser = memo(function QueryBrowser() {
         <Split hasGutter>
           <TempoInstanceDropdown tempo={tempo} setTempo={setTempo} />
           <SplitItem isFilled>
-            <QueryEditor query={query} runQuery={runQuery} />
+            <QueryEditor tempo={tempo} query={query} runQuery={runQuery} />
           </SplitItem>
         </Split>
-        <PersesWrapper
-          tempo={tempo}
-          definitions={[{ kind: 'TempoTraceQuery', spec: { query } }]}
-          duration={duration as DurationString}
-        >
-          <ScatterPlot />
-          <TraceTable runQuery={runQuery} />
+        <PersesWrapper>
+          <PersesDashboardWrapper
+            tempo={tempo}
+            definitions={[{ kind: 'TempoTraceQuery', spec: { query } }]}
+            duration={duration as DurationString}
+          >
+            <ScatterPlot />
+            <TraceTable runQuery={runQuery} />
+          </PersesDashboardWrapper>
         </PersesWrapper>
       </Stack>
     </PageSection>
