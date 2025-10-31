@@ -47,5 +47,16 @@
   "Unknown error": "Unknown error",
   "No results found": "No results found",
   "No results match this query criteria. Clear all filters and try again.": "No results match this query criteria. Clear all filters and try again.",
-  "Clear all filters": "Clear all filters"
+  "Clear all filters": "Clear all filters",
+  "OpenTelemetry collectors": "OpenTelemetry collectors",
+  "OpenTelemetryCollector instances": "OpenTelemetryCollector instances",
+  "Name": "Name",
+  "Namespace": "Namespace",
+  "Mode": "Mode",
+  "Receivers / Exporters": "Receivers / Exporters",
+  "Receivers": "Receivers",
+  "Exporters": "Exporters",
+  "Custom Resource": "Custom Resource",
+  "Service Account": "Service Account",
+  "Configuration": "Configuration"
 }

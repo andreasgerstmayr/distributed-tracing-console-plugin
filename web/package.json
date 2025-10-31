@@ -8,7 +8,7 @@
     "clean": "rm -rf dist",
     "build": "npm run clean && NODE_ENV=production npm run ts-node node_modules/.bin/webpack",
     "build-dev": "npm run clean && npm run ts-node node_modules/.bin/webpack",
-    "start": "npm run ts-node node_modules/.bin/webpack serve",
+    "start": "npm run ts-node node_modules/.bin/webpack serve --progress",
     "start-console": "./start-console.sh",
     "i18n": "i18n-scripts/build-i18n.sh && node i18n-scripts/set-english-defaults.js",
     "ts-node": "ts-node -O '{\"module\":\"commonjs\"}'",
@@ -68,7 +68,10 @@
     "description": "This plugin adds a distributed tracing UI to the Openshift console.",
     "exposedModules": {
       "TracesPage": "./pages/TracesPage/TracesPage",
-      "TraceDetailPage": "./pages/TraceDetailPage/TraceDetailPage"
+      "TraceDetailPage": "./pages/TraceDetailPage/TraceDetailPage",
+      "CollectorsList": "./pages/collector/list/CollectorsList",
+      "CollectorDetailPage": "./pages/collector/details/CollectorDetailPage",
+      "CollectorTab": "./pages/collector/details/tabs/CollectorTab"
     },
     "dependencies": {
       "@console/pluginAPI": "*"
@@ -81,8 +84,11 @@
     "@hookform/resolvers": "^3.3.4",
     "@patternfly/react-charts": "^8.2.0",
     "@patternfly/react-core": "^6.2.0",
+    "@patternfly/react-data-view": "^6.4.0",
     "@patternfly/react-icons": "^5.4.2",
+    "@patternfly/react-table": "^6.4.0",
     "@patternfly/react-templates": "^6.2.2",
+    "@patternfly/react-topology": "^6.2.0",
     "@perses-dev/components": "^0.52.0",
     "@perses-dev/core": "^0.52.0",
     "@perses-dev/dashboards": "^0.52.0",

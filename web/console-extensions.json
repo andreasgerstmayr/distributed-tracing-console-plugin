@@ -24,5 +24,46 @@
       "path": "/observe/traces/:traceId",
       "component": { "$codeRef": "TraceDetailPage" }
     }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
+      "id": "distributed-tracing",
+      "name": "OpenTelemetry",
+      "href": "/observe/collectors",
+      "perspective": "admin",
+      "section": "observe"
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/observe/collectors",
+      "component": { "$codeRef": "CollectorsList" }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/observe/collectors/:namespace/:name",
+      "component": { "$codeRef": "CollectorDetailPage" }
+    }
+  },
+  {
+    "type": "console.tab/horizontalNav",
+    "properties": {
+      "model": {
+        "group": "opentelemetry.io",
+        "version": "v1beta1",
+        "kind": "OpenTelemetryCollector"
+      },
+      "page": {
+        "name": "Collector",
+        "href": "collector"
+      },
+      "component": { "$codeRef": "CollectorTab" }
+    }
   }
 ]
