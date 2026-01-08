@@ -17,6 +17,7 @@ import { TempoInstanceDropdown } from '../../../components/TempoInstanceDropdown
 import { filterToTraceQL } from './Filter/traceql_from_filter';
 import { TraceQLFilter } from './TraceQLFilter';
 import { traceQLToFilter } from './Filter/traceql_to_filter';
+import './FilterToolbar.css';
 
 interface FilterToolbarProps {
   tempo: TempoInstance | undefined;
