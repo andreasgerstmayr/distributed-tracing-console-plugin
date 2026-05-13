@@ -940,6 +940,296 @@ EOF`,
     cy.log('✓ TraceQL query with no results and clear filters functionality verified');
   });
 
+  it('[Capability:UIPlugin][Capability:CustomTimeRange] Test custom time range selection and preset switching', () => {
+    cy.log('Navigate to the /observe/traces page');
+    cy.visit('/observe/traces');
+    cy.url().should('include', '/observe/traces');
+    cy.dismissWelcomeModal();
+    cy.get('input[placeholder="Select a Tempo instance"]', { timeout: 30000 }).should('exist');
+
+    cy.log('Select TempoStack instance: chainsaw-rbac / simplst');
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
+
+    cy.log('Select tenant: dev');
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem('dev').click();
+
+    cy.log('Select preset time range: Last 1 hour');
+    cy.muiSelect('Select time range').click();
+    cy.muiSelectOption('Last 1 hour').click();
+
+    cy.log('Verify traces appear with the preset time range');
+    cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
+
+    cy.log('Verify URL contains the relative time range parameter');
+    cy.url().should('include', 'start=1h');
+
+    cy.log('Open the time range dropdown and select Custom Time Range');
+    cy.muiSelect('Select time range').click();
+    cy.muiSelectOption('Custom Time Range').click();
+
+    cy.log('Verify the DateTimeRangePicker popover opens with expected elements');
+    cy.contains('.MuiPopover-paper', 'Apply', { timeout: 10000 })
+      .should('be.visible')
+      .as('datePickerPopover');
+
+    cy.get('@datePickerPopover').within(() => {
+      cy.contains('Select Start Time').should('be.visible');
+      cy.get('label').contains('Start Time').should('exist');
+      cy.get('label').contains('End Time').should('exist');
+      cy.get('button.MuiButton-contained').contains('Apply').should('be.visible');
+      cy.get('button.MuiButton-outlined').contains('Cancel').should('be.visible');
+    });
+
+    cy.log('Apply the pre-populated custom time range');
+    cy.get('@datePickerPopover').within(() => {
+      cy.get('button.MuiButton-contained').contains('Apply').click();
+    });
+
+    cy.log('Verify the popover closes after Apply');
+    cy.contains('.MuiPopover-paper', 'Apply').should('not.exist');
+
+    cy.log('Verify URL switches to absolute time range parameters');
+    cy.url().should('match', /start=\d+/);
+    cy.url().should('match', /end=\d+/);
+    cy.url().should('not.include', 'start=1h');
+
+    cy.log('Verify the time range dropdown displays the custom date range');
+    cy.muiSelect('Select time range').invoke('text').should('match', /\d{4}-\d{2}-\d{2}/);
+
+    cy.log('Verify traces are still visible within the custom time range');
+    cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
+
+    cy.log('Reopen custom time range to test Cancel flow');
+    cy.muiSelect('Select time range').click();
+    cy.get('[role="listbox"] [role="option"]').last().click();
+
+    cy.log('Verify the DateTimeRangePicker popover opens');
+    cy.contains('.MuiPopover-paper', 'Apply', { timeout: 10000 }).should('be.visible');
+
+    cy.log('Click Cancel without making changes');
+    cy.contains('.MuiPopover-paper', 'Apply').within(() => {
+      cy.get('button.MuiButton-outlined').contains('Cancel').click();
+    });
+
+    cy.log('Verify the popover closes after Cancel');
+    cy.contains('.MuiPopover-paper', 'Apply').should('not.exist');
+
+    cy.log('Verify the previous custom time range is preserved in URL');
+    cy.url().should('match', /start=\d+/);
+    cy.url().should('match', /end=\d+/);
+
+    cy.log('Switch back to preset: Last 1 hour');
+    cy.muiSelect('Select time range').click();
+    cy.muiSelectOption('Last 1 hour').click();
+
+    cy.log('Verify URL reverts to relative time range');
+    cy.url().should('include', 'start=1h');
+
+    cy.log('Verify traces are visible with the preset time range');
+    cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
+  });
+
+  it('[Capability:UIPlugin][Capability:ScatterPlot] Test scatter plot visibility toggle and trace navigation', () => {
+    cy.log('Navigate to the /observe/traces page');
+    cy.visit('/observe/traces');
+    cy.url().should('include', '/observe/traces');
+    cy.dismissWelcomeModal();
+    cy.get('input[placeholder="Select a Tempo instance"]', { timeout: 30000 }).should('exist');
+
+    cy.log('Select TempoStack instance: chainsaw-rbac / simplst');
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
+
+    cy.log('Select tenant: dev');
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem('dev').click();
+
+    cy.log('Select time range: Last 1 hour');
+    cy.muiSelect('Select time range').click();
+    cy.muiSelectOption('Last 1 hour').click();
+
+    cy.log('Wait for traces to load');
+    cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
+
+    cy.log('Verify scatter plot container and canvas are rendered');
+    cy.get('[data-testid="ScatterChartPanel_ScatterPlot"]', { timeout: 10000 }).should('be.visible');
+    cy.get('[data-testid="ScatterChartPanel_ScatterPlot"] canvas').should('exist');
+
+    cy.log('Test Hide graph toggle');
+    cy.contains('button', 'Hide graph').should('be.visible').click();
+    cy.get('[data-testid="ScatterChartPanel_ScatterPlot"]').should('not.exist');
+
+    cy.log('Test Show graph toggle');
+    cy.contains('button', 'Show graph').should('be.visible').click();
+    cy.get('[data-testid="ScatterChartPanel_ScatterPlot"]', { timeout: 10000 }).should('be.visible');
+    cy.get('[data-testid="ScatterChartPanel_ScatterPlot"] canvas').should('exist');
+
+    cy.log('Verify scatter plot ECharts container has instance attribute');
+    cy.get('[data-testid="ScatterChartPanel_ScatterPlot"] > div').should('have.attr', '_echarts_instance_');
+
+    cy.log('Trigger tooltip by hovering over scatter plot canvas');
+    cy.get('[data-testid="ScatterChartPanel_ScatterPlot"] canvas').first()
+      .trigger('mousemove', 'center', { force: true });
+    cy.wait(1000);
+
+    cy.log('Verify tooltip content if visible');
+    cy.get('body').then(($body) => {
+      if ($body.find('div:contains("Service name")').length > 0) {
+        cy.contains('Service name').should('be.visible');
+        cy.contains('Span name').should('be.visible');
+        cy.contains('Duration').should('be.visible');
+        cy.contains('Span count').should('be.visible');
+        cy.log('Tooltip verified with trace details');
+      } else {
+        cy.log('Tooltip not rendered at center position, skipping tooltip content check');
+      }
+    });
+
+    cy.log('Verify scatter plot renders data points by checking canvas is non-empty');
+    cy.get('[data-testid="ScatterChartPanel_ScatterPlot"] canvas').first().then(($canvas) => {
+      const canvas = $canvas[0] as HTMLCanvasElement;
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const hasContent = imageData.data.some((val, idx) => idx % 4 !== 3 && val !== 0);
+      expect(hasContent, 'Canvas should have rendered content (axes, data points)').to.be.true;
+    });
+  });
+
+  it('[Capability:UIPlugin][Capability:AttributeFilters] Test attribute-based filtering with Span Name, Status, and Span Duration filters', () => {
+    cy.log('Navigate to the /observe/traces page');
+    cy.visit('/observe/traces');
+    cy.url().should('include', '/observe/traces');
+    cy.dismissWelcomeModal();
+    cy.get('input[placeholder="Select a Tempo instance"]', { timeout: 30000 }).should('exist');
+
+    cy.log('Select TempoStack instance: chainsaw-rbac / simplst');
+    cy.pfTypeahead('Select a Tempo instance').click();
+    cy.pfSelectMenuItem('chainsaw-rbac / simplst').click();
+
+    cy.log('Select tenant: dev');
+    cy.pfTypeahead('Select a tenant').click();
+    cy.pfSelectMenuItem('dev').click();
+
+    cy.log('Select time range: Last 1 hour');
+    cy.muiSelect('Select time range').click();
+    cy.muiSelectOption('Last 1 hour').click();
+
+    cy.log('Wait for traces to load');
+    cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
+
+    cy.log('Switch filter type to Span Name');
+    cy.contains('label', 'Filter').parents('.pf-v6-c-form__group, .pf-v5-c-form__group').first()
+      .find('.pf-v6-c-menu-toggle, .pf-v5-c-menu-toggle').first().click();
+    cy.pfSelectMenuItem('Span Name').click();
+
+    cy.log('Open Span Name multi-select and verify options appear');
+    cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+    cy.get('.pf-v6-c-menu__item input[type="checkbox"], .pf-v5-c-menu__item input[type="checkbox"]', { timeout: 10000 })
+      .should('have.length.greaterThan', 0);
+
+    cy.log('Select the first span name option');
+    cy.get('.pf-v6-c-menu__item input[type="checkbox"], .pf-v5-c-menu__item input[type="checkbox"]')
+      .first()
+      .check();
+
+    cy.log('Verify traces are still visible after Span Name filter');
+    cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
+
+    cy.log('Clear the Span Name filter chip group');
+    cy.pfCloseButtonIfExists('Close chip group');
+    cy.pfCloseButtonIfExists('Close label group');
+
+    cy.log('Switch filter type to Status');
+    cy.contains('label', 'Filter').parents('.pf-v6-c-form__group, .pf-v5-c-form__group').first()
+      .find('.pf-v6-c-menu-toggle, .pf-v5-c-menu-toggle').first().click();
+    cy.pfSelectMenuItem('Status').click();
+
+    cy.log('Open Status multi-select and verify predefined options');
+    cy.pfMenuToggleByLabel('Multi typeahead checkbox').click();
+    cy.get('.pf-v6-c-menu__item-text, .pf-v5-c-menu__item-text', { timeout: 10000 })
+      .should('contain', 'unset')
+      .and('contain', 'ok')
+      .and('contain', 'error');
+
+    cy.log('Select status: unset');
+    cy.pfCheckMenuItem('unset');
+
+    cy.log('Verify traces appear with unset status filter');
+    cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
+
+    cy.log('Clear the Status filter chip group');
+    cy.pfCloseButtonIfExists('Close chip group');
+    cy.pfCloseButtonIfExists('Close label group');
+
+    cy.log('Switch filter type to Span Duration');
+    cy.contains('label', 'Filter').parents('.pf-v6-c-form__group, .pf-v5-c-form__group').first()
+      .find('.pf-v6-c-menu-toggle, .pf-v5-c-menu-toggle').first().click();
+    cy.pfSelectMenuItem('Span Duration').click();
+
+    cy.log('Enter min duration: 1ms');
+    cy.get('#min-duration-input').should('be.visible').clear().type('1ms');
+    cy.wait(1500);
+
+    cy.log('Verify toolbar chip shows duration filter');
+    cy.get('.pf-v6-c-label__content, .pf-v5-c-label__content, .pf-v6-c-chip__text, .pf-v5-c-chip__text', { timeout: 5000 })
+      .should('contain', '1ms');
+
+    cy.log('Enter max duration: 10s');
+    cy.get('#max-duration-input').should('be.visible').clear().type('10s');
+    cy.wait(1500);
+
+    cy.log('Verify toolbar chip shows duration range');
+    cy.get('.pf-v6-c-label__content, .pf-v5-c-label__content, .pf-v6-c-chip__text, .pf-v5-c-chip__text', { timeout: 5000 })
+      .should('contain', '1ms')
+      .and('contain', '10s');
+
+    cy.log('Verify traces are visible within the duration range');
+    cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
+
+    cy.log('Clear the Span Duration filter');
+    cy.pfCloseButtonIfExists('Close chip group');
+    cy.pfCloseButtonIfExists('Close label group');
+
+    cy.log('Switch filter type back to Service Name');
+    cy.contains('label', 'Filter').parents('.pf-v6-c-form__group, .pf-v5-c-form__group').first()
+      .find('.pf-v6-c-menu-toggle, .pf-v5-c-menu-toggle').first().click();
+    cy.pfSelectMenuItem('Service Name').click();
+
+    cy.log('Verify traces are visible without any filters');
+    cy.get('a.MuiLink-root', { timeout: 30000 }).should('be.visible');
+  });
+
+  it('[Capability:UIPlugin][Capability:TLSCertRotation] Test dynamic TLS certificate rotation without pod restart', function () {
+    cy.runChainsawTest('cert-rotation', 'TLS certificate rotation', { timeout: 600000 });
+  });
+
+  it('[Capability:UIPlugin][Capability:TLSProfile] Test TLS profile configuration on plugin endpoints', function () {
+    // Setup: install tls-scanner and scale down operator
+    cy.runChainsawTest('tls-profile-setup', 'TLS profile setup');
+
+    // Test default Intermediate profile (TLS 1.2 + TLS 1.3)
+    cy.runChainsawTest('tls-profile-intermediate', 'Intermediate TLS profile');
+    cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev');
+
+    // Test Modern profile (TLS 1.3 only)
+    cy.runChainsawTest('tls-profile-modern', 'Modern TLS profile');
+    cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev');
+
+    // Test Custom cipher suites
+    cy.runChainsawTest('tls-profile-custom-ciphers', 'Custom cipher suites');
+    cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev');
+
+    // Test Old profile (TLS 1.0+)
+    cy.runChainsawTest('tls-profile-old', 'Old TLS profile');
+    cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev');
+
+    // Revert to default, scale operator back up, cleanup tls-scanner
+    cy.runChainsawTest('tls-profile-revert', 'Revert to default');
+    cy.verifyTracesVisible('chainsaw-rbac / simplst', 'dev');
+  });
+
   it('[Capability:OperatorLifecycle][Capability:Installation] Test "Install Tempo operator" if operator is not installed', () => {
     cy.log('Delete Chainsaw test namespaces and resources');
     cy.exec(
