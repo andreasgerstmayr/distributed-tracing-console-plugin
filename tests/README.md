@@ -117,6 +117,7 @@ This project includes a comprehensive set of custom Cypress commands optimized f
 - **Component-aware interactions** for PatternFly elements
 - **Bulk validation** for trace attributes (75% code reduction)
 - **Debug-friendly** commands with built-in logging
+- **OCP version compatibility** with `cy.dismissWelcomeModal()` for OCP 4.22+ modal handling
 
 ### Key Command Categories
 
@@ -175,6 +176,33 @@ Chainsaw tests in `fixtures/chainsaw-tests/` validate operator permissions and m
 
 These tests ensure that the distributed tracing plugin works correctly with different RBAC configurations and deployment models, supporting both upstream and downstream environments.
 
+### Chainsaw TLS Profile Testing
+Chainsaw tests in `fixtures/chainsaw-tests/tls-profile-*` verify that the plugin backend correctly enforces TLS minimum version and cipher suite configuration. Since the Cluster Observability Operator does not yet propagate TLS profile settings, the tests scale down the operator to prevent reconciliation, then patch the plugin deployment directly with `TLS_MIN_VERSION` and `TLS_CIPHER_SUITES` environment variables.
+
+Each TLS profile is a separate chainsaw test directory:
+
+| Directory | Description |
+|-----------|-------------|
+| `tls-profile-setup` | Installs the `tls-scanner` pod (nmap + openssl) and scales down the observability-operator |
+| `tls-profile-intermediate` | Verifies the default profile: TLS 1.2 + TLS 1.3 accepted |
+| `tls-profile-modern` | Patches `TLS_MIN_VERSION=VersionTLS13` and verifies only TLS 1.3 is accepted, TLS 1.2 is rejected |
+| `tls-profile-custom-ciphers` | Patches `TLS_CIPHER_SUITES` to restrict TLS 1.2 ciphers and verifies only specified ciphers are offered |
+| `tls-profile-old` | Patches `TLS_MIN_VERSION=VersionTLS10` and verifies TLS 1.0/1.1/1.2/1.3 are all accepted |
+| `tls-profile-revert` | Reverts env vars, verifies Intermediate profile is restored, scales operator back up, cleans up tls-scanner |
+
+Shared helper functions (`tls-helpers.sh`) and resource files live in `fixtures/chainsaw-tests/tls-profile/`.
+
+The Cypress test (`[Capability:TLSProfile]`) runs each chainsaw test in order and verifies traces remain visible in the UI after each profile change.
+
+To run the TLS profile chainsaw tests standalone (without Cypress):
+```bash
+export KUBECONFIG=~/Downloads/kubeconfig
+cd tests
+for test in tls-profile-setup tls-profile-intermediate tls-profile-modern tls-profile-custom-ciphers tls-profile-old tls-profile-revert; do
+  chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete ./fixtures/chainsaw-tests/$test
+done
+```
+
 ### Chainsaw Lightspeed Setup
 Chainsaw tests in `fixtures/lightspeed/` handle initial setup of OpenShift Lightspeed for AI-powered trace analysis integration:
 
@@ -192,8 +220,19 @@ EOF
 
 Ensure the environment variables are set before running Cypress tests to properly configure Lightspeed.
 
+### Cypress MCP Server (AI-Assisted Testing)
+
+The project supports the [cypress-mcp](https://github.com/yashpreetbathla/cypress-mcp) MCP server, which gives Claude Code tools to run Cypress tests, manage spec files, and automate browsers. See the "Cypress MCP Setup" section in `CLAUDE.md` for setup instructions.
+
+With the MCP server configured, Claude Code can:
+- List and read spec files (`cypress_list_specs`, `cypress_read_spec`)
+- Run tests and get structured results (`cypress_run`)
+- Open the Cypress GUI (`cypress_open`)
+- Automate a browser for visual inspection (`cypress_navigate`, `cypress_screenshot`, `cypress_snapshot`)
+
 ### Documentation
 - **CLAUDE.md** - Guidance for Claude AI assistance with this codebase
 - **SELECTOR_BEST_PRACTICES.md** - Comprehensive selector guidelines and command usage
 - **PATTERNFLY_COMMANDS_EXAMPLES.md** - Complete command examples and workflows
+- **TEST_COVERAGE_REPORT.md** - Detailed test coverage analysis and gap report
 - **README.md** - This file with setup and architecture overview
