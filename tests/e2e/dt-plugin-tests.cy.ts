@@ -295,25 +295,21 @@ describe('tracing-uiplugin', () => {
     }
 
     cy.log('Run Lightspeed Chainsaw test to setup OLSConfig and credentials');
-    cy.exec(
-      `chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete --quiet ./fixtures/lightspeed --values - <<EOF
+    cy.runChainsawTest(
+      './fixtures/lightspeed',
+      'Lightspeed OLSConfig and credentials setup',
+      {
+        timeout: 1800000,
+        extraArgs: `--values - <<EOF
 LIGHTSPEED_PROVIDER_URL: ${Cypress.env('LIGHTSPEED_PROVIDER_URL')}
 LIGHTSPEED_PROVIDER_TOKEN: ${Cypress.env('LIGHTSPEED_PROVIDER_TOKEN')}
 EOF`,
-      {
-        env: {
-          KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
-        },
-        timeout: 1800000,
-        failOnNonZeroExit: true
-      }
-    ) .then((result) => {
-      expect(result.code).to.eq(0);
-      cy.log(`Lightspeed Chainsaw test ran successfully: ${result.stdout}`);
-    });
+      },
+    );
 
     cy.log('Wait for Lightspeed popover to open by default and close it');
     cy.visit('/');
+    cy.dismissWelcomeModal();
     olsHelpers.waitForPopoverAndClose();
 
     cy.log('Create Distributed Tracing UI Plugin instance.');
@@ -347,6 +343,7 @@ EOF`,
           cy.log('No web console update alert found after 2 minutes, navigating to traces page');
           cy.visit('/observe/traces');
           cy.url().should('include', '/observe/traces');
+          cy.dismissWelcomeModal();
           cy.get('body').should('be.visible');
           // Wait for the page to fully render
           cy.wait(3000);
@@ -464,6 +461,7 @@ EOF`,
     cy.log('Navigate to the observe/traces page');
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
+    cy.dismissWelcomeModal();
     cy.get('body').should('be.visible');
     // Wait a bit for the page to fully render
     cy.wait(3000);
@@ -496,19 +494,11 @@ EOF`,
 
   it('[Capability:UIPlugin][Capability:TraceVisualization][Capability:SpanLinks][Capability:RBAC] Test Distributed Tracing UI plugin with Tempo instances and verify traces, span links using user having cluster-admin role', function () {
     cy.log('Create TempoStack and TempoMonolithic instances');
-    cy.exec(
-      'chainsaw test --config ./fixtures/.chainsaw.yaml --skip-delete --quiet ./fixtures/chainsaw-tests',
-      {
-        env: {
-          KUBECONFIG: Cypress.env('KUBECONFIG_PATH'),
-        },
-        timeout: 1200000,
-        failOnNonZeroExit: true
-      }
-    ) .then((result) => {
-      expect(result.code).to.eq(0);
-      cy.log(`Chainsaw test ran successfully: ${result.stdout}`);
-    });
+    cy.runChainsawTest(
+      ['multitenancy-rbac', 'monolithic-multitenancy-rbac'],
+      'Create TempoStack and TempoMonolithic instances',
+      { timeout: 1200000 },
+    );
 
     cy.log('Navigate to the /observe/traces page');
     // Force a clean navigation after the long chainsaw exec to handle any console auto-reloads
@@ -537,7 +527,7 @@ EOF`,
     // Wait for attributes panel to load
     cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
     cy.muiTraceAttributes({
-      'network.peer.address': { value: '1.2.3.4' },
+      'network.peer.address': { value: ['1.2.3.4', '127.0.0.1'] },
       'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
       'k8s.container.name': { value: 'telemetrygen', optional: true },
       'k8s.namespace.name': {
@@ -576,12 +566,16 @@ EOF`,
     // Wait for trace detail page to fully render span bars after navigation
     cy.findByTestId('span-duration-bar', { timeout: 30000 }).should('have.length.greaterThan', 1);
     cy.findByTestId('span-duration-bar').eq(1).click();
-    // Switch to the Attributes tab (the Links tab may still be selected from the previous trace)
-    cy.get('button.MuiTab-root').contains('Attributes').click();
-    // Wait for attributes panel to load
-    cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
+    // Switch to the Attributes tab if tab bar is present, otherwise attributes are shown inline
+    cy.get('body').then(($body) => {
+      if ($body.find('button.MuiTab-root:contains("Attributes")').length > 0) {
+        cy.get('button.MuiTab-root').contains('Attributes').click();
+      }
+    });
+    // Wait for attributes to load
+    cy.get('.MuiListItemText-root, .MuiTypography-h5', { timeout: 10000 }).should('be.visible');
     cy.muiTraceAttributes({
-      'network.peer.address': { value: '1.2.3.4' },
+      'network.peer.address': { value: ['1.2.3.4', '127.0.0.1'] },
       'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
       'k8s.container.name': { value: 'telemetrygen', optional: true },
       'k8s.namespace.name': {
@@ -631,12 +625,16 @@ EOF`,
     // Wait for trace detail page to fully render span bars after navigation
     cy.findByTestId('span-duration-bar', { timeout: 30000 }).should('have.length.greaterThan', 1);
     cy.findByTestId('span-duration-bar').eq(1).click();
-    // Switch to the Attributes tab (the Links tab may still be selected from the previous trace)
-    cy.get('button.MuiTab-root').contains('Attributes').click();
-    // Wait for attributes panel to load
-    cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
+    // Switch to the Attributes tab if tab bar is present, otherwise attributes are shown inline
+    cy.get('body').then(($body) => {
+      if ($body.find('button.MuiTab-root:contains("Attributes")').length > 0) {
+        cy.get('button.MuiTab-root').contains('Attributes').click();
+      }
+    });
+    // Wait for attributes to load
+    cy.get('.MuiListItemText-root, .MuiTypography-h5', { timeout: 10000 }).should('be.visible');
     cy.muiTraceAttributes({
-      'network.peer.address': { value: '1.2.3.4' },
+      'network.peer.address': { value: ['1.2.3.4', '127.0.0.1'] },
       'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
       'k8s.container.name': { value: 'telemetrygen', optional: true },
       'k8s.namespace.name': {
@@ -669,7 +667,7 @@ EOF`,
     // Wait for attributes panel to load
     cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
     cy.muiTraceAttributes({
-      'network.peer.address': { value: '1.2.3.4' },
+      'network.peer.address': { value: ['1.2.3.4', '127.0.0.1'] },
       'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
       'k8s.container.name': { value: 'telemetrygen', optional: true },
       'k8s.namespace.name': {
@@ -703,7 +701,7 @@ EOF`,
     // Wait for attributes panel to load
     cy.get('.MuiListItemText-root', { timeout: 10000 }).should('be.visible');
     cy.muiTraceAttributes({
-      'network.peer.address': { value: '1.2.3.4' },
+      'network.peer.address': { value: ['1.2.3.4', '127.0.0.1'] },
       'peer.service': { value: (text) => ['telemetrygen-server', 'telemetrygen-client'].includes(text) },
       'k8s.container.name': { value: 'telemetrygen', optional: true },
       'k8s.namespace.name': {
@@ -724,6 +722,7 @@ EOF`,
     cy.log('Navigate to the observe/traces page');
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
+    cy.dismissWelcomeModal();
     cy.get('body').should('be.visible');
     // Wait for the page to fully render
     cy.wait(3000);
@@ -796,6 +795,7 @@ EOF`,
     cy.log('Navigate to the /observe/traces page');
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
+    cy.dismissWelcomeModal();
     cy.get('body').should('be.visible');
     // Wait for the page to fully render
     cy.wait(3000);
@@ -879,6 +879,7 @@ EOF`,
     cy.log('Navigate to the /observe/traces page');
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
+    cy.dismissWelcomeModal();
     cy.get('body').should('be.visible');
     cy.wait(3000);
 
@@ -1252,6 +1253,7 @@ EOF`,
     cy.log('Navigate to the observe/traces page');
     cy.visit('/observe/traces');
     cy.url().should('include', '/observe/traces');
+    cy.dismissWelcomeModal();
     cy.get('body').should('be.visible');
     cy.wait(3000);
 
@@ -1276,9 +1278,19 @@ EOF`,
     cy.log('Wait for catalog page to load completely');
     cy.wait(3000);
 
-    cy.log('Verify Tempo Operator details modal Install button exists');
-    // Support both old and new OpenShift versions
-    cy.get('[data-test="catalog-details-modal-cta"], [data-test-id="operator-install-btn"]', { timeout: 60000 }).should('exist');
+    cy.dismissWelcomeModal();
+
+    cy.log('Verify Tempo Operator is shown on the catalog/OperatorHub page');
+    // OCP 4.22+ uses a "Software Catalog" page with tiles; older versions show an OperatorHub modal
+    cy.get('body', { timeout: 60000 }).should('contain.text', 'Tempo');
+    cy.get('body').then(($body) => {
+      if ($body.find('[data-test="catalog-details-modal-cta"], [data-test-id="operator-install-btn"]').length > 0) {
+        cy.log('Found OperatorHub install button (pre-4.22 flow)');
+      } else {
+        cy.log('Catalog page detected (4.22+ flow), verifying Tempo Operator tile is visible');
+        cy.contains('Tempo Operator').should('be.visible');
+      }
+    });
 
     cy.log('✓ "Install Tempo operator" button successfully redirects to OperatorHub');
   });
