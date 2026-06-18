@@ -12,7 +12,7 @@
   "Trace": "Trace",
   "Tracing": "Tracing",
   "Trace is too large to be analyzed by OpenShift Lightspeed. Max size is {{max}} MB.": "Trace is too large to be analyzed by OpenShift Lightspeed. Max size is {{max}} MB.",
-  "Ask OpenShift Lightspeed": "Ask OpenShift Lightspeed",
+  "Ask OpenShift Lightspeed (Preview)": "Ask OpenShift Lightspeed (Preview)",
   "Max traces": "Max traces",
   "Not all matching traces are currently visible. Increase the display limit to view more.": "Not all matching traces are currently visible. Increase the display limit to view more.",
   "Hide graph": "Hide graph",

@@ -229,11 +229,11 @@ function LightspeedButton({ useOpenOLS, traceName, traceYaml }: LightspeedButton
   }
 
   return (
-    <Tooltip content={t('Ask OpenShift Lightspeed')}>
+    <Tooltip content={t('Ask OpenShift Lightspeed (Preview)')}>
       <Button
         variant="plain"
         onClick={handleTraceAISummaryClick}
-        aria-label={t('Ask OpenShift Lightspeed')}
+        aria-label={t('Ask OpenShift Lightspeed (Preview)')}
         icon={<MagicIcon />}
       />
     </Tooltip>
